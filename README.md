@@ -5,9 +5,9 @@ Compare a handful of GitHub projects side by side before picking a dependency, f
 [![GitHub stars](https://img.shields.io/github/stars/X234324/oss-shortlist?style=social)](https://github.com/X234324/oss-shortlist)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
-**[Try OSS Shortlist online](https://x234324.github.io/oss-shortlist/)** · No install, account, token, or backend.
+**[View the public repository](https://github.com/X234324/oss-shortlist)** · No install, account, token, or backend.
 
-The first time you publish, enable **Settings → Pages → Deploy from a branch → `main` / `/(root)`**. GitHub Pages then serves the app directly from this repository.
+To use it online, enable **Settings → Pages → Deploy from a branch → `main` / `/(root)`**. GitHub Pages will then serve the app at [x234324.github.io/oss-shortlist](https://x234324.github.io/oss-shortlist/).
 
 ## Why another GitHub tool?
 
@@ -37,6 +37,8 @@ Then visit [http://localhost:8000](http://localhost:8000). No build step is requ
 - A missing GitHub Release is reported as “none published,” not a finding against projects that distribute another way.
 
 The app reads the public GitHub REST API directly from your browser. It stores no data, requests no credentials, and includes no analytics or third-party JavaScript. GitHub's unauthenticated API limit is 60 requests per hour; each checked repository uses up to two requests.
+
+The app has no third-party code dependencies. Its source is original and released under MIT; linked services such as GitHub and OpenSSF Scorecard remain under their own terms.
 
 For deeper supply-chain security checks, see [OpenSSF Scorecard](https://github.com/ossf/scorecard). OSS Shortlist is a comparison aid, not a security audit or quality ranking.
 

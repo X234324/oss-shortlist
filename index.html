@@ -639,13 +639,7 @@
         if (!repo || typeof repo.full_name !== "string" || repo.full_name.toLowerCase() !== normalized.toLowerCase()) {
           throw new Error(t("notFound"));
         }
-        let release = null;
-        try {
-          release = await requestJson(`${API_ROOT}/${path}/releases/latest`, true);
-        } catch (error) {
-          if (error.message === t("apiLimit")) throw error;
-          release = null;
-        }
+        const release = await requestJson(`${API_ROOT}/${path}/releases/latest`, true);
         results.set(name, { ...repo, release, releaseDate: release?.published_at || null });
       } catch (error) {
         errors.set(name, error instanceof Error ? error.message : t("networkFailed"));
