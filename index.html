@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f4">
+  <meta name="description" content="Compare GitHub projects side by side. See real maintenance signals, no opaque scores, no sign-up.">
+  <title>OSS Shortlist — Compare GitHub projects</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f6f7f4;
+      --card: #fff;
+      --ink: #1d2925;
+      --muted: #718079;
+      --line: #e4e9e5;
+      --green: #167653;
+      --green-pale: #eaf5ee;
+      --amber: #956411;
+      --amber-pale: #fff4d9;
+      --red: #ae493e;
+      --red-pale: #fff0ed;
+      --shadow: 0 14px 44px rgb(28 48 37 / 6%);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 82% 0%, rgb(227 239 224 / 75%), transparent 34rem),
+        var(--paper);
+      color: var(--ink);
+      font: 15px/1.5 "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; }
+    .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      min-height: 76px; border-bottom: 1px solid rgb(37 67 51 / 9%);
+    }
+    .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 750; letter-spacing: -.04em; }
+    .brand-mark {
+      display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px;
+      background: var(--green); color: white; font-size: 16px; letter-spacing: 0;
+    }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .quiet-button, .icon-button, .sample-button {
+      border: 1px solid var(--line); background: rgb(255 255 255 / 72%); cursor: pointer;
+      transition: border-color .16s, background .16s, transform .16s;
+    }
+    .quiet-button { padding: 8px 12px; border-radius: 9px; font-size: 13px; }
+    .quiet-button:hover, .sample-button:hover { border-color: #b7c9bd; background: white; }
+    .quiet-button:active, .sample-button:active { transform: translateY(1px); }
+    .quiet-button:disabled { cursor: not-allowed; opacity: .48; }
+    .hero { padding: 66px 0 32px; max-width: 760px; }
+    .eyebrow { color: var(--green); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 13px 0 13px; font-size: clamp(37px, 6vw, 58px); letter-spacing: -.065em; line-height: 1.04; }
+    .hero p { max-width: 640px; margin: 0; color: #59675f; font-size: 17px; }
+    .composer {
+      margin: 6px 0 24px; padding: 16px; border: 1px solid var(--line); border-radius: 16px;
+      background: rgb(255 255 255 / 85%); box-shadow: var(--shadow);
+    }
+    .composer-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 2px 10px; }
+    .composer-label strong { font-size: 14px; }
+    .composer-label span { color: var(--muted); font-size: 12px; }
+    .entry-row { display: flex; gap: 9px; }
+    .entry {
+      min-width: 0; flex: 1; padding: 12px 14px; border: 1px solid #dbe3dd; border-radius: 10px;
+      outline: none; background: white; color: var(--ink);
+    }
+    .entry:focus { border-color: #67a58a; box-shadow: 0 0 0 3px rgb(22 118 83 / 10%); }
+    .entry::placeholder { color: #9ba69f; }
+    .primary-button {
+      padding: 11px 17px; border: 0; border-radius: 10px; background: var(--green); color: white;
+      font-weight: 700; cursor: pointer; transition: background .16s, transform .16s;
+    }
+    .primary-button:hover { background: #105f41; }
+    .primary-button:active { transform: translateY(1px); }
+    .primary-button:disabled { opacity: .5; cursor: not-allowed; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 8px 5px 10px; border-radius: 8px; background: #eff4f0; font-size: 13px; }
+    .chip-remove { display: grid; place-items: center; width: 19px; height: 19px; border: 0; border-radius: 5px; background: transparent; color: #69776f; cursor: pointer; }
+    .chip-remove:hover { background: #dde9df; color: var(--ink); }
+    .form-error { min-height: 0; margin-top: 8px; color: var(--red); font-size: 13px; }
+    .form-error:empty { display: none; }
+    .samples { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 11px 2px 0; }
+    .samples-label { margin-right: 2px; color: var(--muted); font-size: 12px; }
+    .sample-button { padding: 4px 9px; border-radius: 7px; color: #53635a; font-size: 12px; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 27px 0 12px; }
+    .toolbar-title { display: flex; align-items: center; gap: 9px; }
+    .toolbar-title h2 { margin: 0; font-size: 17px; letter-spacing: -.03em; }
+    .count { color: var(--muted); font-size: 12px; }
+    .toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr)); align-items: stretch; gap: 13px; }
+    .empty-state {
+      display: grid; place-items: center; min-height: 218px; padding: 32px 18px; border: 1px dashed #cdd8d0;
+      border-radius: 14px; color: var(--muted); text-align: center;
+    }
+    .empty-icon { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 11px; border-radius: 13px; background: var(--green-pale); color: var(--green); font-size: 19px; }
+    .empty-state strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 15px; }
+    .repo-card { min-width: 0; padding: 17px; border: 1px solid var(--line); border-radius: 13px; background: var(--card); box-shadow: 0 5px 19px rgb(28 48 37 / 3%); }
+    .repo-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .repo-owner { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+    .repo-name { display: block; overflow: hidden; margin-top: 1px; color: var(--ink); font-size: 17px; font-weight: 740; letter-spacing: -.035em; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+    .repo-name:hover { color: var(--green); }
+    .icon-button { flex: 0 0 auto; display: grid; place-items: center; width: 29px; height: 29px; border-radius: 8px; color: #718078; font-size: 15px; }
+    .icon-button:hover { border-color: #e3c2bd; background: var(--red-pale); color: var(--red); }
+    .description { min-height: 43px; margin: 11px 0 13px; color: #647168; font-size: 12px; line-height: 1.5; }
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 0; border-top: 1px solid #edf0ed; border-bottom: 1px solid #edf0ed; }
+    .stat { min-width: 0; }
+    .stat-value { display: block; overflow: hidden; font-size: 14px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .stat-label { display: block; margin-top: 1px; color: var(--muted); font-size: 10px; }
+    .facts { display: grid; gap: 8px; margin: 12px 0; }
+    .fact { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; }
+    .fact-label { color: var(--muted); }
+    .fact-value { text-align: right; font-weight: 600; }
+    .signals { display: grid; gap: 6px; margin-top: 12px; }
+    .signal { padding: 7px 9px; border-radius: 7px; font-size: 11px; line-height: 1.4; }
+    .signal.attention { background: var(--amber-pale); color: #76500d; }
+    .signal.critical { background: var(--red-pale); color: #883b31; }
+    .signal.clear { background: var(--green-pale); color: #376249; }
+    .card-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #edf0ed; }
+    .card-footer a { color: #637269; font-size: 11px; text-decoration: none; }
+    .card-footer a:hover { color: var(--green); text-decoration: underline; }
+    .loading-card { animation: breathe 1.3s ease-in-out infinite alternate; }
+    .skeleton { height: 11px; margin: 10px 0; border-radius: 6px; background: #edf1ed; }
+    .skeleton.short { width: 58%; }
+    @keyframes breathe { to { opacity: .56; } }
+    .notice {
+      display: flex; align-items: flex-start; gap: 9px; margin: 21px 0 0; padding: 13px 15px;
+      border: 1px solid #e8e8dc; border-radius: 10px; background: #fbfaf4; color: #687067; font-size: 12px;
+    }
+    .notice strong { color: #48544a; }
+    .below { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin: 20px 0 58px; }
+    .info-card { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: rgb(255 255 255 / 65%); }
+    .info-card h3 { margin: 0 0 6px; font-size: 13px; }
+    .info-card p { margin: 0; color: #718079; font-size: 12px; }
+    .info-card a { color: var(--green); text-decoration: none; }
+    .info-card a:hover { text-decoration: underline; }
+    .footer { display: flex; justify-content: space-between; gap: 16px; padding: 15px 0 24px; border-top: 1px solid rgb(37 67 51 / 9%); color: var(--muted); font-size: 11px; }
+    .toast { position: fixed; right: 18px; bottom: 18px; z-index: 3; max-width: min(440px, calc(100vw - 36px)); padding: 11px 15px; border-radius: 9px; background: #25382e; color: white; box-shadow: var(--shadow); font-size: 13px; }
+    .toast[hidden] { display: none; }
+    :focus-visible { outline: 3px solid rgb(22 118 83 / 38%); outline-offset: 2px; }
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 26px, 1120px); }
+      .topbar { min-height: 62px; }
+      .hero { padding: 43px 0 25px; }
+      .hero p { font-size: 15px; }
+      .composer { padding: 12px; }
+      .entry-row { flex-wrap: wrap; }
+      .entry { flex-basis: calc(100% - 94px); }
+      .entry-row .primary-button { flex: 1; }
+      .toolbar { align-items: flex-start; flex-direction: column; }
+      .below { grid-template-columns: 1fr; }
+      .footer { flex-direction: column; gap: 5px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="OSS Shortlist home">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <span>OSS Shortlist</span>
+      </a>
+      <div class="top-actions">
+        <a class="quiet-button" href="https://github.com/" target="_blank" rel="noreferrer" data-i18n="github">GitHub ↗</a>
+        <button class="quiet-button" id="language" type="button" aria-label="Switch language">中文</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="title">
+        <div class="eyebrow" data-i18n="eyebrow">A clearer way to choose open source</div>
+        <h1 id="title" data-i18n="title">Compare projects.<br>Choose with context.</h1>
+        <p data-i18n="subtitle">Put a few GitHub repositories side by side. See recent activity, releases and licensing at a glance — facts, not a mystery score.</p>
+      </section>
+
+      <form class="composer" id="form">
+        <div class="composer-label">
+          <strong data-i18n="inputTitle">Which projects are you weighing?</strong>
+          <span id="repoCount"></span>
+        </div>
+        <div class="entry-row">
+          <input class="entry" id="repoInput" type="text" autocomplete="off" spellcheck="false"
+            placeholder="owner/repo or a GitHub URL" aria-label="GitHub repository">
+          <button class="primary-button" type="submit" id="addButton" data-i18n="add">Add project</button>
+        </div>
+        <div class="form-error" id="formError" role="alert"></div>
+        <div class="chips" id="chips" aria-label="Selected repositories"></div>
+        <div class="samples">
+          <span class="samples-label" data-i18n="trySample">Try a comparison:</span>
+          <button class="sample-button" type="button" data-sample="pallets/flask,encode/httpx">Flask vs HTTPX</button>
+          <button class="sample-button" type="button" data-sample="pallets/click,tiangolo/typer">Click vs Typer</button>
+        </div>
+      </form>
+
+      <section aria-labelledby="comparisonTitle">
+        <div class="toolbar">
+          <div class="toolbar-title">
+            <h2 id="comparisonTitle" data-i18n="comparisonTitle">Your comparison</h2>
+            <span class="count" id="resultCount"></span>
+          </div>
+          <div class="toolbar-actions">
+            <button class="quiet-button" type="button" id="copyLink" data-i18n="copyLink">Copy share link</button>
+            <button class="quiet-button" type="button" id="copyReport" data-i18n="copyReport">Copy Markdown report</button>
+            <button class="quiet-button" type="button" id="refresh" data-i18n="refresh">Refresh data</button>
+          </div>
+        </div>
+        <div class="cards" id="cards" aria-live="polite"></div>
+      </section>
+
+      <aside class="notice">
+        <span aria-hidden="true">ⓘ</span>
+        <span><strong data-i18n="caveatTitle">Signals, not a verdict.</strong> <span data-i18n="caveat">A recent push, release or license cannot prove a project is secure, maintained well, or right for your use. Check the source and your requirements.</span></span>
+      </aside>
+
+      <section class="below" aria-label="About this tool">
+        <article class="info-card">
+          <h3 data-i18n="howTitle">How it works</h3>
+          <p data-i18n="howText">Reads public repository and latest-release metadata from GitHub. Flags archived projects, missing licenses, old code pushes and old releases separately — no blended score.</p>
+        </article>
+        <article class="info-card">
+          <h3 data-i18n="privacyTitle">Private by design</h3>
+          <p data-i18n="privacyText">No account, token, server, analytics or dependencies. Your browser requests public GitHub data directly. Share links contain only the repository names you selected. <a href="https://github.com/ossf/scorecard" target="_blank" rel="noreferrer">For deeper security checks, see OpenSSF Scorecard ↗</a></p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span data-i18n="footer">Free, open source, and running entirely in your browser.</span>
+      <span data-i18n="rateNote">GitHub's unauthenticated API allows 60 requests per hour.</span>
+    </footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script>
+    "use strict";
+
+    const MAX_REPOSITORIES = 4;
+    const STALE_PUSH_DAYS = 180;
+    const STALE_RELEASE_DAYS = 365;
+    const API_ROOT = "https://api.github.com/repos";
+
+    const text = {
+      en: {
+        github: "GitHub ↗", eyebrow: "A clearer way to choose open source",
+        title: "Compare projects.<br>Choose with context.",
+        subtitle: "Put a few GitHub repositories side by side. See recent activity, releases and licensing at a glance — facts, not a mystery score.",
+        inputTitle: "Which projects are you weighing?", add: "Add project",
+        trySample: "Try a comparison:", comparisonTitle: "Your comparison",
+        copyLink: "Copy share link", copyReport: "Copy Markdown report", refresh: "Refresh data",
+        caveatTitle: "Signals, not a verdict.",
+        caveat: "A recent push, release or license cannot prove a project is secure, maintained well, or right for your use. Check the source and your requirements.",
+        howTitle: "How it works",
+        howText: "Reads public repository and latest-release metadata from GitHub. Flags archived projects, missing licenses, old code pushes and old releases separately — no blended score.",
+        privacyTitle: "Private by design",
+        privacyText: "No account, token, server, analytics or dependencies. Your browser requests public GitHub data directly. Share links contain only the repository names you selected. ",
+        scorecard: "For deeper security checks, see OpenSSF Scorecard ↗",
+        footer: "Free, open source, and running entirely in your browser.",
+        rateNote: "GitHub's unauthenticated API allows 60 requests per hour.",
+        count: n => `${n}/${MAX_REPOSITORIES} projects`,
+        emptyTitle: "Add repositories to start comparing",
+        emptyText: "Try a sample above, or enter a GitHub URL or owner/repo.",
+        loading: "Checking public GitHub data…", notFound: "Repository not found or not public.",
+        wrongShape: "Use owner/repo or a github.com/owner/repo URL.",
+        emptyInput: "Enter a repository first.", duplicate: "That repository is already in your comparison.",
+        maxReached: `Compare up to ${MAX_REPOSITORIES} repositories at once.`,
+        noProjects: "Add at least one project before refreshing.",
+        stars: "Stars", forks: "Forks", issues: "Open issues",
+        pushed: "Last code push", release: "Latest release", license: "License",
+        created: "Created", archived: "Archived", yes: "Yes", no: "No",
+        none: "None published", noLicense: "Not declared", unknown: "Unknown",
+        noDescription: "No description provided.", scorecardLink: "OpenSSF Scorecard ↗",
+        concernArchived: "Repository is archived.",
+        concernPush: days => `No code push in ${days} days (over ${STALE_PUSH_DAYS}-day signal threshold).`,
+        concernRelease: days => `Latest release was ${days} days ago (over ${STALE_RELEASE_DAYS}-day signal threshold).`,
+        concernLicense: "No license declared. Reuse terms may be unclear.",
+        noSignals: "No selected maintenance signals detected.",
+        apiLimit: "GitHub API rate limit reached. Try again later.",
+        requestFailed: status => `GitHub request failed (HTTP ${status}).`,
+        networkFailed: "Could not reach GitHub. Check your connection and try again.",
+        copiedLink: "Share link copied.", copiedReport: "Markdown report copied.",
+        clipboardDenied: "Clipboard access failed. Try serving this page over HTTPS.",
+        linkNotHosted: "Publish this page over HTTPS before copying a share link.",
+        reportTitle: "GitHub repository comparison",
+        generated: "Generated by OSS Shortlist on",
+        shareHeading: name => `Compare ${name} on OSS Shortlist`,
+        latestReleaseDate: date => `published ${date}`,
+        deleteRepo: name => `Remove ${name}`,
+        copyReportEmpty: "Add repositories before copying a report.",
+        pushedDays: (date, days) => `${date} · ${days}d ago`,
+        releaseDays: (tag, date, days) => `${tag} · ${date} · ${days}d ago`,
+        old: "Old", recent: "Recent", clear: "No signal",
+        errorTitle: "Couldn't check this repository",
+        retry: "Try again"
+      },
+      zh: {
+        github: "GitHub ↗", eyebrow: "更清楚地挑选开源项目",
+        title: "并排比较项目。<br>了解后再决定。",
+        subtitle: "把几个 GitHub 仓库放在一起比较，快速查看近期代码活动、版本发布和许可证——展示可核对的事实，不生成神秘分数。",
+        inputTitle: "你正在比较哪些项目？", add: "添加项目",
+        trySample: "试试示例：", comparisonTitle: "项目对比",
+        copyLink: "复制分享链接", copyReport: "复制 Markdown 报告", refresh: "刷新数据",
+        caveatTitle: "参考信号，不是结论。",
+        caveat: "近期提交、版本发布或许可证不能证明项目安全、维护良好或适合你的需求。请结合源码和具体用途判断。",
+        howTitle: "工作原理",
+        howText: "读取 GitHub 上公开的仓库和最新 Release 信息，分别提示仓库归档、许可证缺失、代码长期未更新和版本长期未发布，不将它们混成一个分数。",
+        privacyTitle: "隐私优先",
+        privacyText: "无需账号、令牌、服务器；没有分析追踪，也不依赖第三方库。浏览器直接读取 GitHub 公开数据。分享链接只包含你选的仓库名。",
+        scorecard: "需要更深入的安全检查，可查看 OpenSSF Scorecard ↗",
+        footer: "免费、开源，完全在你的浏览器中运行。",
+        rateNote: "GitHub 未登录 API 每小时限制 60 次请求。",
+        count: n => `${n}/${MAX_REPOSITORIES} 个项目`,
+        emptyTitle: "添加仓库，开始比较",
+        emptyText: "试试上面的示例，或输入 GitHub 链接 / owner/repo。",
+        loading: "正在读取 GitHub 公开数据…", notFound: "未找到该仓库，或仓库不是公开的。",
+        wrongShape: "请输入 owner/repo 或 github.com/owner/repo 链接。",
+        emptyInput: "请先输入仓库。", duplicate: "这个仓库已经在对比列表中。",
+        maxReached: `最多同时比较 ${MAX_REPOSITORIES} 个仓库。`,
+        noProjects: "请先添加至少一个项目再刷新。",
+        stars: "Stars", forks: "Fork", issues: "待处理 Issue",
+        pushed: "最近代码提交", release: "最新 Release", license: "许可证",
+        created: "创建于", archived: "已归档", yes: "是", no: "否",
+        none: "无正式发布", noLicense: "未声明", unknown: "未知",
+        noDescription: "没有项目简介。", scorecardLink: "查看 OpenSSF Scorecard ↗",
+        concernArchived: "仓库已归档。",
+        concernPush: days => `已有 ${days} 天没有代码提交（超过 ${STALE_PUSH_DAYS} 天提示阈值）。`,
+        concernRelease: days => `最新版本已发布 ${days} 天（超过 ${STALE_RELEASE_DAYS} 天提示阈值）。`,
+        concernLicense: "未声明许可证，项目复用条款可能不明确。",
+        noSignals: "没有检测到所选维护信号。",
+        apiLimit: "GitHub API 请求次数已达上限，请稍后再试。",
+        requestFailed: status => `GitHub 请求失败（HTTP ${status}）。`,
+        networkFailed: "无法连接 GitHub，请检查网络后重试。",
+        copiedLink: "已复制分享链接。", copiedReport: "已复制 Markdown 报告。",
+        clipboardDenied: "剪贴板访问失败。请通过 HTTPS 打开页面后重试。",
+        linkNotHosted: "请先通过 HTTPS 发布此页面，再复制分享链接。",
+        reportTitle: "GitHub 仓库对比报告",
+        generated: "由 OSS Shortlist 生成于",
+        shareHeading: name => `在 OSS Shortlist 上比较 ${name}`,
+        latestReleaseDate: date => `发布于 ${date}`,
+        deleteRepo: name => `移除 ${name}`,
+        copyReportEmpty: "请先添加仓库再复制报告。",
+        pushedDays: (date, days) => `${date} · ${days} 天前`,
+        releaseDays: (tag, date, days) => `${tag} · ${date} · ${days} 天前`,
+        old: "较久", recent: "近期", clear: "无明显信号",
+        errorTitle: "无法读取此仓库",
+        retry: "重试"
+      }
+    };
+
+    const input = document.querySelector("#repoInput");
+    const chips = document.querySelector("#chips");
+    const cards = document.querySelector("#cards");
+    const formError = document.querySelector("#formError");
+    const toast = document.querySelector("#toast");
+    const languageButton = document.querySelector("#language");
+    let language = navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
+    let repositories = [];
+    const results = new Map();
+    const errors = new Map();
+    const loading = new Set();
+    let toastTimer;
+
+    function t(key, ...args) {
+      const value = text[language][key];
+      return typeof value === "function" ? value(...args) : value;
+    }
+
+    function element(tag, className, value) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (value !== undefined) node.textContent = value;
+      return node;
+    }
+
+    function setLanguage(next) {
+      language = next;
+      document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
+      document.querySelectorAll("[data-i18n]").forEach(node => {
+        const value = t(node.dataset.i18n);
+        if (node.id === "title") node.innerHTML = value;
+        else node.textContent = value;
+      });
+      languageButton.textContent = language === "zh" ? "EN" : "中文";
+      languageButton.setAttribute("aria-label", language === "zh" ? "Switch to English" : "切换到中文");
+      input.placeholder = language === "zh" ? "owner/repo 或 GitHub 仓库链接" : "owner/repo or a GitHub URL";
+      renderChips();
+      renderCards();
+    }
+
+    function parseRepository(value) {
+      let inputValue = value.trim().replace(/\/+$/, "");
+      if (/^https?:\/\//i.test(inputValue)) {
+        let url;
+        try { url = new URL(inputValue); } catch { return null; }
+        if (!["github.com", "www.github.com"].includes(url.hostname.toLowerCase())) return null;
+        inputValue = url.pathname.replace(/^\/+|\/+$/g, "");
+      } else if (inputValue.toLowerCase().startsWith("github.com/")) {
+        inputValue = inputValue.slice("github.com/".length);
+      }
+      inputValue = inputValue.replace(/\.git$/i, "");
+      const parts = inputValue.split("/");
+      if (parts.length !== 2 || parts.some(part => !/^[a-zA-Z0-9_.-]+$/.test(part))) return null;
+      return `${parts[0]}/${parts[1]}`;
+    }
+
+    function setShareHash() {
+      const hash = repositories.length ? `#${repositories.map(encodeURIComponent).join(",")}` : "";
+      history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
+    }
+
+    function setRepositories(names) {
+      repositories = names.slice(0, MAX_REPOSITORIES);
+      setShareHash();
+      renderChips();
+      renderCards();
+    }
+
+    function addRepositories(names) {
+      const next = [...repositories];
+      for (const name of names) {
+        if (next.some(item => item.toLowerCase() === name.toLowerCase())) continue;
+        if (next.length >= MAX_REPOSITORIES) break;
+        next.push(name);
+      }
+      setRepositories(next);
+    }
+
+    function renderChips() {
+      chips.replaceChildren();
+      document.querySelector("#repoCount").textContent = t("count", repositories.length);
+      for (const name of repositories) {
+        const chip = element("span", "chip");
+        chip.append(element("span", "", name));
+        const remove = element("button", "chip-remove", "×");
+        remove.type = "button";
+        remove.setAttribute("aria-label", t("deleteRepo", name));
+        remove.addEventListener("click", () => {
+          results.delete(name);
+          errors.delete(name);
+          loading.delete(name);
+          setRepositories(repositories.filter(repo => repo !== name));
+        });
+        chip.append(remove);
+        chips.append(chip);
+      }
+    }
+
+    function formatNumber(value) {
+      return typeof value === "number" ? new Intl.NumberFormat(language === "zh" ? "zh-CN" : "en").format(value) : t("unknown");
+    }
+
+    function ageInDays(value) {
+      const timestamp = Date.parse(value);
+      return Number.isFinite(timestamp) ? Math.max(0, Math.floor((Date.now() - timestamp) / 86400000)) : null;
+    }
+
+    function formatDate(value) {
+      if (!value || !Number.isFinite(Date.parse(value))) return t("unknown");
+      return new Intl.DateTimeFormat(language === "zh" ? "zh-CN" : "en", {
+        year: "numeric", month: "short", day: "numeric", timeZone: "UTC"
+      }).format(new Date(value));
+    }
+
+    function stat(parent, value, label) {
+      const wrapper = element("div", "stat");
+      wrapper.append(element("span", "stat-value", value), element("span", "stat-label", label));
+      parent.append(wrapper);
+    }
+
+    function fact(parent, label, value) {
+      const wrapper = element("div", "fact");
+      wrapper.append(element("span", "fact-label", label), element("span", "fact-value", value));
+      parent.append(wrapper);
+    }
+
+    function signalList(repo) {
+      const notices = [];
+      if (repo.archived) notices.push({ text: t("concernArchived"), kind: "critical" });
+      const pushAge = ageInDays(repo.pushed_at);
+      if (pushAge !== null && pushAge >= STALE_PUSH_DAYS) notices.push({ text: t("concernPush", pushAge), kind: "attention" });
+      if (!repo.license) notices.push({ text: t("concernLicense"), kind: "attention" });
+      if (repo.releaseDate) {
+        const releaseAge = ageInDays(repo.releaseDate);
+        if (releaseAge !== null && releaseAge >= STALE_RELEASE_DAYS) notices.push({ text: t("concernRelease", releaseAge), kind: "attention" });
+      }
+      return notices;
+    }
+
+    function renderLoadingCard(name) {
+      const card = element("article", "repo-card loading-card");
+      card.setAttribute("aria-label", `${name} — ${t("loading")}`);
+      card.append(element("div", "skeleton short"), element("div", "skeleton"),
+        element("div", "skeleton short"), element("div", "skeleton"));
+      return card;
+    }
+
+    function renderErrorCard(name, message) {
+      const card = element("article", "repo-card");
+      card.append(element("div", "repo-owner", name), element("h3", "repo-name", t("errorTitle")));
+      const signal = element("div", "signal critical", message);
+      signal.style.marginTop = "14px";
+      card.append(signal);
+      const retry = element("button", "quiet-button", t("retry"));
+      retry.type = "button";
+      retry.style.marginTop = "12px";
+      retry.addEventListener("click", () => loadRepository(name));
+      card.append(retry);
+      return card;
+    }
+
+    function renderRepositoryCard(repo) {
+      const card = element("article", "repo-card");
+      const heading = element("div", "repo-heading");
+      const title = element("div");
+      const pieces = repo.full_name.split("/");
+      title.append(element("div", "repo-owner", pieces.slice(0, -1).join("/")));
+      const link = element("a", "repo-name", pieces.at(-1));
+      link.href = repo.html_url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.title = repo.full_name;
+      title.append(link);
+      const remove = element("button", "icon-button", "×");
+      remove.type = "button";
+      remove.setAttribute("aria-label", t("deleteRepo", repo.full_name));
+      remove.addEventListener("click", () => {
+        results.delete(repo.full_name);
+        errors.delete(repo.full_name);
+        setRepositories(repositories.filter(name => name.toLowerCase() !== repo.full_name.toLowerCase()));
+      });
+      heading.append(title, remove);
+      card.append(heading);
+      card.append(element("p", "description", repo.description || t("noDescription")));
+
+      const stats = element("div", "stat-grid");
+      stat(stats, formatNumber(repo.stargazers_count), t("stars"));
+      stat(stats, formatNumber(repo.forks_count), t("forks"));
+      stat(stats, formatNumber(repo.open_issues_count), t("issues"));
+      card.append(stats);
+
+      const facts = element("div", "facts");
+      const pushAge = ageInDays(repo.pushed_at);
+      fact(facts, t("pushed"), pushAge === null ? t("unknown") : t("pushedDays", formatDate(repo.pushed_at), pushAge));
+      const releaseAge = ageInDays(repo.releaseDate);
+      const releaseText = repo.release
+        ? t("releaseDays", repo.release.tag_name || t("unknown"), formatDate(repo.releaseDate), releaseAge ?? 0)
+        : t("none");
+      fact(facts, t("release"), releaseText);
+      fact(facts, t("license"), repo.license?.spdx_id || t("noLicense"));
+      fact(facts, t("created"), formatDate(repo.created_at));
+      if (repo.archived) fact(facts, t("archived"), t("yes"));
+      card.append(facts);
+
+      const notices = signalList(repo);
+      const signals = element("div", "signals");
+      if (!notices.length) notices.push({ text: t("noSignals"), kind: "clear" });
+      for (const notice of notices) signals.append(element("div", `signal ${notice.kind}`, notice.text));
+      card.append(signals);
+
+      const footer = element("div", "card-footer");
+      const repoLink = element("a", "", "GitHub ↗");
+      repoLink.href = repo.html_url;
+      repoLink.target = "_blank";
+      repoLink.rel = "noreferrer";
+      const scorecard = element("a", "", t("scorecardLink"));
+      scorecard.href = `https://scorecard.dev/viewer/?uri=github.com/${repo.full_name}`;
+      scorecard.target = "_blank";
+      scorecard.rel = "noreferrer";
+      footer.append(repoLink, scorecard);
+      card.append(footer);
+      return card;
+    }
+
+    function renderCards() {
+      cards.replaceChildren();
+      const completed = repositories.filter(name => results.has(name) || errors.has(name));
+      document.querySelector("#resultCount").textContent = completed.length ? t("count", completed.length) : "";
+      if (!repositories.length) {
+        const empty = element("div", "empty-state");
+        const content = element("div");
+        content.append(element("div", "empty-icon", "↔"),
+          element("strong", "", t("emptyTitle")),
+          element("span", "", t("emptyText")));
+        empty.append(content);
+        cards.append(empty);
+        return;
+      }
+      for (const name of repositories) {
+        if (loading.has(name)) cards.append(renderLoadingCard(name));
+        else if (results.has(name)) cards.append(renderRepositoryCard(results.get(name)));
+        else if (errors.has(name)) cards.append(renderErrorCard(name, errors.get(name)));
+        else cards.append(renderLoadingCard(name));
+      }
+    }
+
+    async function requestJson(url, allowNotFound = false) {
+      let response;
+      try {
+        response = await fetch(url, {
+          headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
+        });
+      } catch {
+        throw new Error(t("networkFailed"));
+      }
+      if (allowNotFound && response.status === 404) return null;
+      if (response.status === 403 && response.headers.get("X-RateLimit-Remaining") === "0") {
+        throw new Error(t("apiLimit"));
+      }
+      if (!response.ok) throw new Error(response.status === 404 ? t("notFound") : t("requestFailed", response.status));
+      try {
+        return await response.json();
+      } catch {
+        throw new Error(t("networkFailed"));
+      }
+    }
+
+    async function loadRepository(name) {
+      const normalized = parseRepository(name);
+      if (!normalized) {
+        errors.set(name, t("wrongShape"));
+        loading.delete(name);
+        renderCards();
+        return;
+      }
+      results.delete(name);
+      errors.delete(name);
+      loading.add(name);
+      renderCards();
+      try {
+        const path = normalized.split("/").map(encodeURIComponent).join("/");
+        const repo = await requestJson(`${API_ROOT}/${path}`);
+        if (!repo || typeof repo.full_name !== "string" || repo.full_name.toLowerCase() !== normalized.toLowerCase()) {
+          throw new Error(t("notFound"));
+        }
+        let release = null;
+        try {
+          release = await requestJson(`${API_ROOT}/${path}/releases/latest`, true);
+        } catch (error) {
+          if (error.message === t("apiLimit")) throw error;
+          release = null;
+        }
+        results.set(name, { ...repo, release, releaseDate: release?.published_at || null });
+      } catch (error) {
+        errors.set(name, error instanceof Error ? error.message : t("networkFailed"));
+      } finally {
+        loading.delete(name);
+        renderCards();
+      }
+    }
+
+    async function refreshAll() {
+      if (!repositories.length) {
+        showToast(t("noProjects"));
+        return;
+      }
+      await Promise.all(repositories.map(loadRepository));
+    }
+
+    function markdownReport() {
+      const rows = [
+        `# ${t("reportTitle")}`,
+        "",
+        `_${t("generated")} ${new Date().toISOString().slice(0, 10)}_`,
+        "",
+        "| Repository | Stars | Last push | Latest release | License | Archived | Signals |",
+        "| --- | ---: | --- | --- | --- | --- | --- |"
+      ];
+      for (const name of repositories) {
+        const repo = results.get(name);
+        if (!repo) {
+          rows.push(`| [${name}](https://github.com/${name}) | — | — | — | — | — | ${errors.get(name) || t("loading")} |`);
+          continue;
+        }
+        const release = repo.release
+          ? `${repo.release.tag_name || t("unknown")} (${formatDate(repo.releaseDate)})`
+          : t("none");
+        const signals = signalList(repo).map(item => item.text).join("; ") || t("noSignals");
+        rows.push(`| [${repo.full_name}](${repo.html_url}) | ${repo.stargazers_count} | ${formatDate(repo.pushed_at)} | ${release} | ${repo.license?.spdx_id || t("noLicense")} | ${repo.archived ? t("yes") : t("no")} | ${signals.replace(/\|/g, "\\|")} |`);
+      }
+      rows.push("", t("caveat"));
+      return rows.join("\n");
+    }
+
+    async function copyText(value, successMessage) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          const area = element("textarea");
+          area.value = value;
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.append(area);
+          area.select();
+          const copied = document.execCommand("copy");
+          area.remove();
+          if (!copied) throw new Error("clipboard");
+        }
+        showToast(successMessage);
+      } catch {
+        showToast(t("clipboardDenied"));
+      }
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 3200);
+    }
+
+    document.querySelector("#form").addEventListener("submit", event => {
+      event.preventDefault();
+      formError.textContent = "";
+      const value = input.value.trim();
+      if (!value) {
+        formError.textContent = t("emptyInput");
+        input.focus();
+        return;
+      }
+      const name = parseRepository(value);
+      if (!name) {
+        formError.textContent = t("wrongShape");
+        input.focus();
+        return;
+      }
+      if (repositories.some(repo => repo.toLowerCase() === name.toLowerCase())) {
+        formError.textContent = t("duplicate");
+        input.select();
+        return;
+      }
+      if (repositories.length >= MAX_REPOSITORIES) {
+        formError.textContent = t("maxReached");
+        return;
+      }
+      input.value = "";
+      addRepositories([...repositories, name]);
+      loadRepository(name);
+      input.focus();
+    });
+
+    document.querySelectorAll("[data-sample]").forEach(button => {
+      button.addEventListener("click", () => {
+        const names = button.dataset.sample.split(",").map(parseRepository);
+        const combined = [...repositories];
+        for (const name of names) {
+          if (name && !combined.some(existing => existing.toLowerCase() === name.toLowerCase()) && combined.length < MAX_REPOSITORIES) {
+            combined.push(name);
+          }
+        }
+        formError.textContent = "";
+        setRepositories(combined);
+        refreshAll();
+      });
+    });
+
+    document.querySelector("#refresh").addEventListener("click", refreshAll);
+    document.querySelector("#copyReport").addEventListener("click", () => {
+      if (!repositories.length) {
+        showToast(t("copyReportEmpty"));
+        return;
+      }
+      copyText(markdownReport(), t("copiedReport"));
+    });
+    document.querySelector("#copyLink").addEventListener("click", () => {
+      if (!/^https?:$/.test(location.protocol)) {
+        showToast(t("linkNotHosted"));
+        return;
+      }
+      const title = t("shareHeading", repositories.join(" vs "));
+      copyText(`${title}\n${location.href}`, t("copiedLink"));
+    });
+    languageButton.addEventListener("click", () => setLanguage(language === "zh" ? "en" : "zh"));
+
+    const initialNames = location.hash.slice(1).split(",").filter(Boolean).map(value => {
+      try { return parseRepository(decodeURIComponent(value)); } catch { return null; }
+    }).filter(Boolean);
+    if (initialNames.length) {
+      repositories = [...new Set(initialNames)].slice(0, MAX_REPOSITORIES);
+      setShareHash();
+      refreshAll();
+    }
+    setLanguage(language);
+  </script>
+</body>
+</html>
